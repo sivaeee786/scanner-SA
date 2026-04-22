@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ondas Spectrum Analyzer Utility</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root { --bg:#0f0f0f; --panel:#1b1b1b; --panel2:#202020; --border:#343434; --text:#f2f2f2; --muted:#b9b9b9; --trace:#6ec6ff; --hold:#ff7a93; --marker:#ffd166; }
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+  .app{max-width:1380px;margin:0 auto;padding:14px}.header,.sidebar,.chart-panel{background:var(--panel);border:1px solid var(--border);border-radius:16px}
+  .header{padding:16px 18px;margin-bottom:14px}.title{margin:0;font-size:34px;line-height:1}.subtitle{margin:6px 0 0;color:var(--muted)}
+  .main{display:grid;grid-template-columns:310px minmax(0,1fr);gap:14px;align-items:start}.sidebar{padding:16px;overflow-y:auto;max-height:90vh}.chart-panel{padding:14px;overflow:hidden;min-width:0}
+  h2{margin:0 0 10px;font-size:22px}.muted{color:var(--muted)}.upload-box{border:1px dashed #446a70;background:#183036;border-radius:14px;padding:14px;margin:16px 0}.file-input{width:100%;display:block;margin:10px 0 14px}
+  .btn,.play-btn{width:100%;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:999px;padding:11px 14px;min-height:44px;cursor:pointer;margin-top:10px}.row-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.control{margin-top:16px}.control label{display:block;font-size:15px;color:var(--muted);margin-bottom:6px}.control input,.control select{width:100%;padding:8px;border-radius:6px;background:#2a2a2a;color:white;border:1px solid #444}.checkline{display:flex;align-items:center;gap:8px;color:var(--text);cursor:pointer}.y-box{margin-top:14px;padding:12px;background:var(--panel2);border:1px solid var(--border);border-radius:14px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.stat{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:12px}.k{color:var(--muted);font-size:12px;text-transform:uppercase}.v{font-size:18px;font-weight:700;margin-top:4px}.status{margin-top:16px;color:var(--muted);font-size:14px;line-height:1.4}.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--muted)}.legend-line{width:14px;height:3px;border-radius:999px;display:inline-block;margin-right:6px}#plotWrap{width:100%;height:680px;overflow:hidden;border-radius:12px;background:#171717}#plot{width:100%;height:100%}
+  @media (max-width:1024px){.main{grid-template-columns:1fr}#plotWrap{height:520px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1 class="title">Ondas Spectrum Analyzer Utility</h1>
+    <div class="subtitle">High-Speed Playback Enabled (Up to 20 sweeps/sec) | Amplitude: dBm</div>
+  </div>
+  <div class="main">
+    <div class="sidebar">
+      <h2>Input file</h2>
+      <div class="upload-box">
+        <strong>Upload scan text file</strong>
+        <input class="file-input" id="fileInput" type="file" accept=".txt,.log,.csv" />
+        <button class="btn" id="loadSampleBtn">Load Sample Format</button>
+      </div>
+
+      <div class="control">
+        <label for="frameSlider">Sweep index</label>
+        <input id="frameSlider" type="range" min="0" max="0" value="0" step="1" />
+      </div>
+      <div class="control">
+        <label for="playSpeed">Playback speed</label>
+        <select id="playSpeed">
+          <option value="50">20 sweeps/sec (Turbo)</option>
+          <option value="100">10 sweeps/sec</option>
+          <option value="200">5 sweeps/sec</option>
+          <option value="500" selected>2 sweeps/sec</option>
+          <option value="1000">1 sweep/sec</option>
+        </select>
+      </div>
+      <div class="control">
+        <label class="checkline"><input type="checkbox" id="autoY" checked /> Auto Y-axis</label>
+      </div>
+
+      <div class="y-box">
+        <div class="control">
+          <label for="refLevel">Reference level (top dBm)</label>
+          <input id="refLevel" type="number" step="1" value="-100" />
+        </div>
+        <div class="control">
+          <label for="yPerDiv">Y scale per division</label>
+          <select id="yPerDiv">
+            <option value="1">1 dB/div</option>
+            <option value="2">2 dB/div</option>
+            <option value="5" selected>5 dB/div</option>
+            <option value="10">10 dB/div</option>
+            <option value="20">20 dB/div</option>
+          </select>
+        </div>
+        <div class="control">
+          <label for="yDivCount">Vertical divisions</label>
+          <select id="yDivCount">
+            <option value="6">6 div</option>
+            <option value="8" selected>8 div</option>
+            <option value="10">10 div</option>
+            <option value="12">12 div</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="control">
+        <label class="checkline"><input type="checkbox" id="markerEnable" /> Enable marker</label>
+      </div>
+      <div class="control">
+        <label for="markerType">Marker type</label>
+        <select id="markerType">
+          <option value="peak">Peak</option>
+          <option value="manual">Manual frequency</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="peakSearch">Peak search mode</label>
+        <select id="peakSearch">
+          <option value="current">Current sweep peak</option>
+          <option value="maxhold">Max hold peak</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="markerFreq">Manual marker frequency (MHz)</label>
+        <input id="markerFreq" type="number" step="0.001" value="936.950" />
+      </div>
+
+      <div class="row-buttons">
+        <button class="play-btn" id="playBtn">Play</button>
+        <button class="btn" id="resetHoldBtn">Reset max hold</button>
+      </div>
+      <button class="btn" id="fitBtn">Fit current trace</button>
+
+      <div class="stats">
+        <div class="stat"><div class="k">Sweeps</div><div class="v" id="sweepsCount">0</div></div>
+        <div class="stat"><div class="k">Bins</div><div class="v" id="binsCount">0</div></div>
+        <div class="stat"><div class="k">Center (MHz)</div><div class="v" id="centerFreq">-</div></div>
+        <div class="stat"><div class="k">RBW (Hz)</div><div class="v" id="rbwValue">-</div></div>
+      </div>
+      <div class="status" id="statusMsg">Waiting for data...</div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="legend">
+        <span><span class="legend-line" style="background:var(--trace)"></span>Current sweep (dBm)</span>
+        <span><span class="legend-line" style="background:var(--hold)"></span>Max hold (dBm)</span>
+        <span><span class="legend-line" style="background:var(--marker)"></span>Marker</span>
+      </div>
+      <div id="plotWrap"><div id="plot"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const sampleData = `21-04-26 19:05:03  2800 936943750 108 -112 -111 -111 -110 -111 -111 -109 -111 -110 -110 -110 -110 -110 -110 -110 -111 -111 -110 -111 -110 -111 -111 -111 -111 -111 -110 -112 -112 -111 -110 -112 -110 -110 -111 -111 -111 -112 -112 -112 -113 -113 -113 -112 -113 -111 -112 -112 -111 -112 -113 -113 -113 -112 -112 -109 -112 -112 -111 -110 -112 -111 -112 -111 -112 -112 -111 -110 -111 -111 -111 -112 -110 -111 -109 -111 -110 -111 -110 -109 -110 -110 -110 -110 -110 -110 -110 -110 -111 -110 -109 -111 -110 -110 -109 -108 -103 -104 -110 -111 -111 -112 -111 -112 -111 -111 -110 -112 -111
+21-04-26 19:05:04  2800 936943750 108 -112 -112 -112 -111 -110 -111 -111 -111 -110 -110 -111 -110 -111 -110 -111 -110 -110 -110 -111 -110 -111 -110 -111 -110 -111 -111 -111 -111 -110 -111 -110 -104 -103 -109 -112 -112 -111 -112 -112 -112 -112 -113 -111 -111 -112 -112 -113 -110 -112 -111 -111 -112 -111 -111 -112 -111 -111 -111 -111 -112 -112 -112 -111 -112 -110 -111 -110 -112 -111 -111 -111 -111 -111 -111 -111 -110 -111 -110 -109 -110 -111 -110 -110 -110 -110 -109 -110 -110 -110 -110 -111 -109 -110 -109 -108 -103 -106 -109 -111 -111 -111 -112 -111 -110 -111 -110 -111 -112`;
+
+const E = {fileInput:document.getElementById('fileInput'),loadSampleBtn:document.getElementById('loadSampleBtn'),frameSlider:document.getElementById('frameSlider'),playSpeed:document.getElementById('playSpeed'),autoY:document.getElementById('autoY'),refLevel:document.getElementById('refLevel'),yPerDiv:document.getElementById('yPerDiv'),yDivCount:document.getElementById('yDivCount'),markerEnable:document.getElementById('markerEnable'),markerType:document.getElementById('markerType'),peakSearch:document.getElementById('peakSearch'),markerFreq:document.getElementById('markerFreq'),playBtn:document.getElementById('playBtn'),resetHoldBtn:document.getElementById('resetHoldBtn'),fitBtn:document.getElementById('fitBtn'),sweepsCount:document.getElementById('sweepsCount'),binsCount:document.getElementById('binsCount'),centerFreq:document.getElementById('centerFreq'),rbwValue:document.getElementById('rbwValue'),statusMsg:document.getElementById('statusMsg')};
+const S = {frames:[],currentIndex:0,maxHold:[],playing:false,timer:null};
+
+function parseLine(line){
+  const p=line.trim().split(/\s+/);
+  if(p.length<6) return null;
+  const rbw=Number(p[2]),center=Number(p[3]),count=Number(p[4]);
+  const samples=p.slice(5).map(Number).filter(v=>!Number.isNaN(v)).slice(0,count);
+  if(!Number.isFinite(rbw)||!Number.isFinite(center)||samples.length<count) return null;
+  const start=center-((count-1)/2)*rbw;
+  return{timestamp:`${p[0]} ${p[1]}`,rbw,center,count,samples,freqs:Array.from({length:count},(_,i)=>(start+i*rbw)/1e6)};
+}
+
+function parseContent(t){return t.split(/\r?\n/).map(parseLine).filter(Boolean)}
+
+function yCfg(){
+  if(E.autoY.checked) return{autorange:true};
+  const top=Number(E.refLevel.value)||-100,per=Number(E.yPerDiv.value)||5,divs=Number(E.yDivCount.value)||8;
+  return{autorange:false,range:[top-per*divs,top],dtick:per};
+}
+
+function markerTrace(frame){
+  if(!E.markerEnable.checked) return null;
+  let i, val;
+  if(E.markerType.value==='peak'){
+    const src=E.peakSearch.value==='maxhold'?S.maxHold:frame.samples;
+    i=src.indexOf(Math.max(...src));
+    val=src[i];
+  } else {
+    const target=Number(E.markerFreq.value);
+    i=frame.freqs.reduce((p,c,idx)=>Math.abs(c-target)<Math.abs(frame.freqs[p]-target)?idx:p,0);
+    val=frame.samples[i];
+  }
+  return {x:[frame.freqs[i]],y:[val],mode:'markers+text',text:[`${val} dBm`],textposition:'top center',marker:{color:'#ffd166',size:10,symbol:'circle'}};
+}
+
+function draw(updateHold=true){
+  if(!S.frames.length) return;
+  const f=S.frames[S.currentIndex];
+  if(!S.maxHold.length || S.maxHold.length !== f.samples.length) S.maxHold=[...f.samples];
+  else if(updateHold) S.maxHold=S.maxHold.map((v,i)=>Math.max(v,f.samples[i]));
+
+  E.sweepsCount.textContent=S.frames.length;
+  E.binsCount.textContent=f.count;
+  E.centerFreq.textContent=(f.center/1e6).toFixed(3);
+  E.rbwValue.textContent=f.rbw;
+  E.frameSlider.max=S.frames.length-1;
+  E.frameSlider.value=S.currentIndex;
+
+  const mt=markerTrace(f);
+  const traces=[{x:f.freqs,y:f.samples,name:'Current',line:{color:'#6ec6ff',width:2}},{x:f.freqs,y:S.maxHold,name:'Max Hold',line:{color:'#ff7a93',width:2}}];
+  if(mt) traces.push(mt);
+
+  const y=yCfg();
+  Plotly.react('plot',traces,{
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'#171717',font:{color:'#f2f2f2'},showlegend:false,
+    margin:{t:50,b:50,l:60,r:20},
+    xaxis:{title:'Frequency (MHz)',gridcolor:'#333'},
+    yaxis:{title:'Amplitude (dBm)',gridcolor:'#333',autorange:y.autorange,range:y.range,dtick:y.dtick}
+  },{responsive:true,displaylogo:false});
+}
+
+function load(frames){S.frames=frames;S.currentIndex=0;S.maxHold=[];draw(false);E.statusMsg.textContent=`Loaded ${frames.length} sweeps.`;}
+
+E.fileInput.onchange=async e=>{const f=e.target.files[0];if(f)load(parseContent(await f.text()));};
+E.loadSampleBtn.onclick=()=>load(parseContent(sampleData));
+E.playBtn.onclick=()=>{
+  if(S.playing){clearInterval(S.timer);E.playBtn.textContent='Play';} 
+  else {S.timer=setInterval(()=>{S.currentIndex=(S.currentIndex+1)%S.frames.length;draw(true);},Number(E.playSpeed.value));E.playBtn.textContent='Pause';}
+  S.playing=!S.playing;
+};
+E.playSpeed.onchange=()=>{if(S.playing){clearInterval(S.timer);E.playBtn.click();E.playBtn.click();}};
+E.resetHoldBtn.onclick=()=>{S.maxHold=[];draw(false);};
+E.frameSlider.oninput=()=>{S.currentIndex=Number(E.frameSlider.value);draw(false);};
+['autoY','refLevel','yPerDiv','yDivCount','markerEnable','markerType','peakSearch','markerFreq'].forEach(id=>E[id].oninput=()=>draw(false));
+
+Plotly.newPlot('plot',[],{paper_bgcolor:'#0f0f0f',plot_bgcolor:'#171717'});
+</script>
+</body>
+</html>
