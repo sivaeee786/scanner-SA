@@ -3,113 +3,696 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ondas Spectrum Analyzer Utility</title>
+<title>Ondas Spectrum Analyzer Utility - Enhanced Capture</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0f0f0f; --panel:#1b1b1b; --panel2:#202020; --border:#343434; --text:#f2f2f2; --muted:#b9b9b9; --trace:#6ec6ff; --hold:#ff7a93; --marker:#ffd166; }
-  *{box-sizing:border-box} body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
-  .app{max-width:1380px;margin:0 auto;padding:14px}.header,.sidebar,.chart-panel{background:var(--panel);border:1px solid var(--border);border-radius:16px}
-  .header{padding:16px 18px;margin-bottom:14px}.title{margin:0;font-size:34px;line-height:1}.subtitle{margin:6px 0 0;color:var(--muted)}
-  .main{display:grid;grid-template-columns:310px minmax(0,1fr);gap:14px;align-items:start}.sidebar{padding:16px;overflow-y:auto;max-height:90vh}.chart-panel{padding:14px;overflow:hidden;min-width:0}
-  h2{margin:0 0 10px;font-size:22px}.muted{color:var(--muted)}.upload-box{border:1px dashed #446a70;background:#183036;border-radius:14px;padding:14px;margin:16px 0}.file-input{width:100%;display:block;margin:10px 0 14px}
-  .btn,.play-btn{width:100%;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:999px;padding:11px 14px;min-height:44px;cursor:pointer;margin-top:10px}.row-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.control{margin-top:16px}.control label{display:block;font-size:15px;color:var(--muted);margin-bottom:6px}.control input,.control select{width:100%;padding:8px;border-radius:6px;background:#2a2a2a;color:white;border:1px solid #444}.checkline{display:flex;align-items:center;gap:8px;color:var(--text);cursor:pointer}.y-box{margin-top:14px;padding:12px;background:var(--panel2);border:1px solid var(--border);border-radius:14px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.stat{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:12px}.k{color:var(--muted);font-size:12px;text-transform:uppercase}.v{font-size:18px;font-weight:700;margin-top:4px}.status{margin-top:16px;color:var(--muted);font-size:14px;line-height:1.4}.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--muted)}.legend-line{width:14px;height:3px;border-radius:999px;display:inline-block;margin-right:6px}#plotWrap{width:100%;height:680px;overflow:hidden;border-radius:12px;background:#171717}#plot{width:100%;height:100%}
-  @media (max-width:1024px){.main{grid-template-columns:1fr}#plotWrap{height:520px}}
+  :root {
+    --bg:#f6f8ef;
+    --bg2:#eef2dd;
+    --panel:#ffffff;
+    --panel2:#f9fbf1;
+    --panel3:#f0f5e0;
+    --border:#d7dfbe;
+    --text:#1f2a1f;
+    --muted:#5a6757;
+    --trace:#1886d8;
+    --hold:#e55c7a;
+    --marker:#e09a19;
+    --good:#2b8f50;
+    --warn:#b97a15;
+    --bad:#c94949;
+    --ring:#c6d39e;
+    --shadow:0 10px 30px rgba(35, 49, 26, 0.09);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Sora", "Trebuchet MS", "Segoe UI", sans-serif;
+    background: radial-gradient(circle at top right, #ffffff 0%, var(--bg) 44%, var(--bg2) 100%);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  .app { max-width: 1440px; margin: 0 auto; padding: 16px; }
+  .header, .sidebar, .chart-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+  }
+  .header {
+    padding: 20px 22px;
+    margin-bottom: 14px;
+    background:
+      linear-gradient(120deg, #fefefe 0%, #f7fae9 60%, #edf4d8 100%);
+  }
+  .title { margin: 0; font-size: 31px; line-height: 1.1; letter-spacing: -0.4px; }
+  .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+  .main {
+    display: grid;
+    grid-template-columns: 390px minmax(0,1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .sidebar {
+    padding: 16px;
+    overflow-y: auto;
+    max-height: 91vh;
+    background:
+      linear-gradient(180deg, #ffffff 0%, #fbfdf4 100%);
+  }
+  .chart-panel {
+    padding: 14px;
+    overflow: hidden;
+    min-width: 0;
+    background:
+      linear-gradient(180deg, #ffffff 0%, #f8fbe9 100%);
+  }
+  h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: -0.25px; }
+  h3 { margin: 0 0 8px; font-size: 15px; color: #283226; }
+  .intro {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .section {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    background: var(--panel2);
+    border-radius: 15px;
+    padding: 12px 12px 13px;
+  }
+  .section h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section small {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .upload-box {
+    border: 1px dashed #8fa274;
+    background:
+      linear-gradient(180deg, #f8fced 0%, #edf5db 100%);
+    border-radius: 14px;
+    padding: 14px;
+    margin: 14px 0 0;
+  }
+  .upload-box strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .upload-box .hint {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .file-input { width: 100%; display: block; margin: 10px 0 12px; }
+  .btn, .play-btn {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--panel3);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 11px 14px;
+    min-height: 42px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  }
+  .btn:hover, .play-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 14px rgba(40, 60, 26, 0.13);
+    background: #ecf3d8;
+  }
+  .play-btn {
+    background: linear-gradient(120deg, #ddecc0 0%, #d2e6a8 100%);
+    border-color: #b9cf8c;
+  }
+  .play-btn.is-playing {
+    background: linear-gradient(120deg, #ffe6be 0%, #ffdc9f 100%);
+    border-color: #e8bf74;
+  }
+  .btn:disabled, .play-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .row-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row-buttons.three { grid-template-columns: 1fr 1fr 1fr; }
+  .control { margin-top: 10px; }
+  .control label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  .control input, .control select {
+    width: 100%;
+    padding: 9px;
+    border-radius: 9px;
+    background: #ffffff;
+    color: var(--text);
+    border: 1px solid #c7d3b2;
+    font-family: inherit;
+    font-size: 12px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .control input:focus, .control select:focus {
+    outline: none;
+    border-color: #95b45a;
+    box-shadow: 0 0 0 3px rgba(149, 180, 90, 0.18);
+  }
+  .checkline { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text); }
+  .checkline input { accent-color: #7ea840; }
+  .inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .help {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .spectro-scale-wrap {
+    margin-top: 10px;
+    border: 1px solid #d7dfbe;
+    border-radius: 10px;
+    padding: 9px;
+    background: #f7fbe8;
+  }
+  .spectro-scale-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .sidebar-tabs {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 7px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f2f6e6;
+  }
+  .tab-btn {
+    border: 1px solid transparent;
+    border-radius: 9px;
+    padding: 8px 8px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+  }
+  .tab-btn.is-active {
+    background: #ffffff;
+    color: #263220;
+    border-color: #cedbae;
+    box-shadow: 0 3px 8px rgba(70, 94, 41, 0.1);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.is-active { display: block; }
+  .toolbar-row {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .ghost-btn {
+    border: 1px solid #c6d3a8;
+    background: #f8fbe9;
+    color: #3e4f35;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+  .ghost-btn:hover {
+    background: #eef4dd;
+    border-color: #b6c796;
+  }
+  .ghost-btn.is-active {
+    background: #e1ecc5;
+    border-color: #9db66a;
+    color: #2b3a20;
+  }
+  .focus-card {
+    margin-top: 12px;
+    border: 1px solid #ccd9ad;
+    border-radius: 12px;
+    padding: 10px;
+    background: linear-gradient(120deg, #ffffff 0%, #f4f9e6 100%);
+    font-size: 11px;
+    color: #4f5f45;
+    line-height: 1.45;
+  }
+  .focus-card strong { color: #293226; }
+  .quick-guide {
+    margin-top: 10px;
+    border: 1px solid #cfdbb2;
+    border-radius: 12px;
+    background: #f7fbe8;
+    padding: 9px 10px;
+  }
+  .quick-guide summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    color: #314027;
+  }
+  .quick-guide ol {
+    margin: 8px 0 0 18px;
+    padding: 0;
+    color: #556351;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .slider-meta {
+    margin-top: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .slider-meta strong {
+    color: #263220;
+    background: #ecf3d8;
+    border: 1px solid #ccdbac;
+    border-radius: 999px;
+    padding: 3px 8px;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .stat {
+    background: #f8fbe9;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .k { color: #5d6a59; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+  .v { font-size: 18px; font-weight: 700; margin-top: 4px; letter-spacing: -0.1px; }
+  .quality-line {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .quality-line strong { color: var(--text); }
+  .status {
+    margin-top: 14px;
+    color: #445344;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid #cfdab3;
+    background: #f7fbe8;
+  }
+  .status.is-ok {
+    background: #eef8e8;
+    border-color: #b9dab1;
+    color: #2f6e3f;
+  }
+  .status.is-warn {
+    background: #fff8e8;
+    border-color: #f2d092;
+    color: #94600c;
+  }
+  .status.is-error {
+    background: #fff0ef;
+    border-color: #ecb8b5;
+    color: #8f3833;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    color: #586857;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .legend-line {
+    width: 14px;
+    height: 3px;
+    border-radius: 999px;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  #plotWrap {
+    width: 100%;
+    height: 690px;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #111;
+    border: 1px solid #d7dfbe;
+  }
+  #plot { width: 100%; height: 100%; }
+  .capture-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .mini {
+    font-size: 12px;
+    color: var(--muted);
+    background: #f4f8e5;
+    border: 1px solid #d3dcb9;
+    border-radius: 10px;
+    padding: 7px;
+  }
+  .mini strong { color: #253124; }
+  .capture-table-wrap {
+    margin-top: 10px;
+    border: 1px solid #d3dbb5;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #ffffff;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #e7edd7;
+    white-space: nowrap;
+    text-align: left;
+  }
+  th {
+    position: sticky;
+    top: 0;
+    background: #edf4d8;
+    color: #475247;
+    z-index: 1;
+  }
+  tr:nth-child(even) td { background: #fbfdf6; }
+  .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .good { color: var(--good); }
+  .warn { color: var(--warn); }
+  .bad { color: var(--bad); }
+  @media (max-width:1024px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { max-height: none; }
+    .sidebar-tabs { grid-template-columns: 1fr; }
+    .row-buttons.three { grid-template-columns: 1fr; }
+    .inline { grid-template-columns: 1fr; }
+    .spectro-scale-grid { grid-template-columns: 1fr; }
+    #plotWrap { height: 520px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <h1 class="title">Ondas Spectrum Analyzer Utility</h1>
-    <div class="subtitle">High-Speed Playback & Spectrogram | Amplitude: dBm</div>
+    <div class="subtitle">Enhanced Sample Capture, Robust Parsing, Sweep Conditioning | Amplitude: dBm</div>
   </div>
+
   <div class="main">
     <div class="sidebar">
-      <h2>Input file</h2>
+      <h2>Control Desk</h2>
+      <p class="intro">Follow this flow: upload data, tune signal quality, then capture/export results.</p>
+
       <div class="upload-box">
-        <strong>Upload scan file</strong>
+        <strong>Upload your scan file</strong>
+        <div class="hint">Supported formats: .txt .log .csv .out</div>
         <input class="file-input" id="fileInput" type="file" accept=".txt,.log,.csv,.out" />
         <button class="btn" id="loadSampleBtn">Load Sample Format</button>
       </div>
 
-      <div class="control">
-        <label for="viewMode">Display Mode</label>
-        <select id="viewMode">
-          <option value="spectrum">Spectrum (Line)</option>
-          <option value="spectrogram">Spectrogram (Waterfall)</option>
-        </select>
+      <div class="sidebar-tabs" id="sidebarTabs">
+        <button class="tab-btn is-active" type="button" data-tab-target="core">Quick Run</button>
+        <button class="tab-btn" type="button" data-tab-target="advanced">Signal Tuning</button>
+        <button class="tab-btn" type="button" data-tab-target="capture">Band Capture</button>
+      </div>
+      <div class="toolbar-row">
+        <button class="ghost-btn" id="showAllControlsBtn" type="button">Show all controls</button>
       </div>
 
-      <div class="row-buttons">
-        <button class="play-btn" id="playBtn">Play</button>
-        <button class="btn" id="resetHoldBtn">Reset max hold</button>
+      <div class="focus-card">
+        <strong>Tip:</strong> Start with <strong>Quick Run</strong>, verify shape and playback, then move to <strong>Signal Tuning</strong> only if data looks noisy.
+      </div>
+      <details class="quick-guide">
+        <summary>First-time usage guide</summary>
+        <ol>
+          <li>Upload a scan file or load sample data.</li>
+          <li>Use Quick Run to inspect sweeps and playback behavior.</li>
+          <li>Use Signal Tuning only when your signal looks noisy or incomplete.</li>
+          <li>Use Band Capture to log threshold-based events and export CSV.</li>
+        </ol>
+      </details>
+
+      <div class="tab-panel is-active" data-tab-panel="core">
+        <div class="section">
+          <h3>Display <small>Step 1</small></h3>
+          <div class="control">
+            <label for="viewMode">Display mode</label>
+            <select id="viewMode">
+              <option value="spectrum">Spectrum (Line)</option>
+              <option value="spectrogram">Spectrogram (Waterfall)</option>
+            </select>
+          </div>
+          <div class="row-buttons">
+            <button class="play-btn" id="playBtn">Play</button>
+            <button class="btn" id="resetHoldBtn">Reset max hold</button>
+          </div>
+          <div class="control">
+            <label for="playSpeed">Playback speed</label>
+            <select id="playSpeed">
+              <option value="50">20 sweeps/sec</option>
+              <option value="100">10 sweeps/sec</option>
+              <option value="200">5 sweeps/sec</option>
+              <option value="500" selected>2 sweeps/sec</option>
+              <option value="1000">1 sweep/sec</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="frameSlider">Sweep index</label>
+            <input id="frameSlider" type="range" min="0" max="0" value="0" step="1" />
+            <div class="slider-meta">
+              <span>Current sweep</span>
+              <strong id="currentSweepLabel">0 / 0</strong>
+            </div>
+          </div>
+          <div class="spectro-scale-wrap">
+            <div class="control">
+              <label for="spectrogramScaleMode">Spectrogram intensity scale</label>
+              <select id="spectrogramScaleMode">
+                <option value="fixed" selected>Fixed range (best for file-to-file comparison)</option>
+                <option value="auto">Auto range (from current file)</option>
+              </select>
+            </div>
+            <div class="spectro-scale-grid" id="spectrogramScaleInputs">
+              <div class="control">
+                <label for="spectrogramMinDbm">Min dBm</label>
+                <input id="spectrogramMinDbm" type="number" step="1" value="-130" />
+              </div>
+              <div class="control">
+                <label for="spectrogramMaxDbm">Max dBm</label>
+                <input id="spectrogramMaxDbm" type="number" step="1" value="-70" />
+              </div>
+            </div>
+          </div>
+          <div class="help">Use slider for frame-by-frame inspection and to validate anomalies before capture.</div>
+        </div>
       </div>
 
-      <div class="control">
-        <label for="playSpeed">Playback speed</label>
-        <select id="playSpeed">
-          <option value="50">20 sweeps/sec</option>
-          <option value="100">10 sweeps/sec</option>
-          <option value="200">5 sweeps/sec</option>
-          <option value="500" selected>2 sweeps/sec</option>
-          <option value="1000">1 sweep/sec</option>
-        </select>
+      <div class="tab-panel" data-tab-panel="advanced">
+        <div class="section">
+          <h3>Capture Integrity <small>Step 2</small></h3>
+          <div class="control">
+            <label class="checkline"><input type="checkbox" id="qualityGate" checked /> Reject low-completeness sweeps</label>
+          </div>
+          <div class="inline">
+            <div class="control">
+              <label for="minValidPercent">Min valid bins (%)</label>
+              <input id="minValidPercent" type="number" min="0" max="100" step="1" value="90" />
+            </div>
+            <div class="control">
+              <label for="missingPolicy">Missing-bin handling</label>
+              <select id="missingPolicy">
+                <option value="interpolate" selected>Repair by interpolation</option>
+                <option value="pad">Pad with last value</option>
+                <option value="drop">Drop incomplete sweep</option>
+              </select>
+            </div>
+          </div>
+          <div class="quality-line" id="qualitySummary">No source loaded.</div>
+        </div>
+
+        <div class="section">
+          <h3>Sample Conditioning</h3>
+          <div class="inline">
+            <div class="control">
+              <label for="avgWindow">Sweep averaging</label>
+              <select id="avgWindow">
+                <option value="1" selected>1 sweep (raw)</option>
+                <option value="3">3 sweeps</option>
+                <option value="5">5 sweeps</option>
+                <option value="9">9 sweeps</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="smoothMode">In-sweep smoothing</label>
+              <select id="smoothMode">
+                <option value="raw" selected>None</option>
+                <option value="mavg3">Moving average (3)</option>
+                <option value="mavg5">Moving average (5)</option>
+                <option value="median3">Median filter (3)</option>
+              </select>
+            </div>
+          </div>
+          <div class="inline">
+            <div class="control">
+              <label class="checkline"><input type="checkbox" id="despikeEnable" checked /> De-spike neighbors</label>
+            </div>
+            <div class="control">
+              <label for="despikeThreshold">Spike threshold (dB)</label>
+              <input id="despikeThreshold" type="number" min="1" max="40" step="1" value="12" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="ySettingsBox">
+          <h3>Y-Axis</h3>
+          <div class="control">
+            <label class="checkline"><input type="checkbox" id="autoY" checked /> Auto Y-axis</label>
+          </div>
+          <div class="inline">
+            <div class="control">
+              <label for="refLevel">Reference level (top dBm)</label>
+              <input id="refLevel" type="number" step="1" value="-100" />
+            </div>
+            <div class="control">
+              <label for="yPerDiv">Y scale per division</label>
+              <select id="yPerDiv">
+                <option value="1">1 dB/div</option>
+                <option value="2">2 dB/div</option>
+                <option value="5" selected>5 dB/div</option>
+                <option value="10">10 dB/div</option>
+                <option value="20">20 dB/div</option>
+              </select>
+            </div>
+          </div>
+          <div class="control">
+            <label for="yDivCount">Vertical divisions</label>
+            <select id="yDivCount">
+              <option value="6">6 div</option>
+              <option value="8" selected>8 div</option>
+              <option value="10">10 div</option>
+              <option value="12">12 div</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section" id="markerBox">
+          <h3>Marker</h3>
+          <div class="control">
+            <label class="checkline"><input type="checkbox" id="markerEnable" /> Enable marker</label>
+          </div>
+          <div class="control">
+            <label for="markerType">Marker type</label>
+            <select id="markerType">
+              <option value="peak">Peak</option>
+              <option value="manual">Manual frequency</option>
+            </select>
+          </div>
+          <div class="control" id="peakSearchCtrl">
+            <label for="peakSearch">Peak search mode</label>
+            <select id="peakSearch">
+              <option value="current">Current sweep peak</option>
+              <option value="maxhold">Max hold peak</option>
+            </select>
+          </div>
+          <div class="control" id="markerFreqCtrl">
+            <label for="markerFreq">Manual marker (MHz)</label>
+            <input id="markerFreq" type="number" step="0.001" value="936.950" />
+          </div>
+        </div>
       </div>
 
-      <div class="control">
-        <label for="frameSlider">Sweep index</label>
-        <input id="frameSlider" type="range" min="0" max="0" value="0" step="1" />
-      </div>
-
-      <div class="y-box" id="ySettingsBox">
-        <div class="control">
-          <label class="checkline"><input type="checkbox" id="autoY" checked /> Auto Y-axis</label>
-        </div>
-        <div class="control">
-          <label for="refLevel">Reference level (top dBm)</label>
-          <input id="refLevel" type="number" step="1" value="-100" />
-        </div>
-        <div class="control">
-          <label for="yPerDiv">Y scale per division</label>
-          <select id="yPerDiv">
-            <option value="1">1 dB/div</option>
-            <option value="2">2 dB/div</option>
-            <option value="5" selected>5 dB/div</option>
-            <option value="10">10 dB/div</option>
-            <option value="20">20 dB/div</option>
-          </select>
-        </div>
-        <div class="control">
-          <label for="yDivCount">Vertical divisions</label>
-          <select id="yDivCount">
-            <option value="6">6 div</option>
-            <option value="8" selected>8 div</option>
-            <option value="10">10 div</option>
-            <option value="12">12 div</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="markerBox">
-        <div class="control">
-          <label class="checkline"><input type="checkbox" id="markerEnable" /> Enable marker</label>
-        </div>
-        <div class="control">
-          <label for="markerType">Marker type</label>
-          <select id="markerType">
-            <option value="peak">Peak</option>
-            <option value="manual">Manual frequency</option>
-          </select>
-        </div>
-        <div class="control" id="peakSearchCtrl">
-          <label for="peakSearch">Peak search mode</label>
-          <select id="peakSearch">
-            <option value="current">Current sweep peak</option>
-            <option value="maxhold">Max hold peak</option>
-          </select>
-        </div>
-        <div class="control" id="markerFreqCtrl">
-          <label for="markerFreq">Manual marker (MHz)</label>
-          <input id="markerFreq" type="number" step="0.001" value="936.950" />
+      <div class="tab-panel" data-tab-panel="capture">
+        <div class="section">
+          <h3>Band Capture <small>Step 3</small></h3>
+          <div class="inline">
+            <div class="control">
+              <label for="captureCenter">Center (MHz)</label>
+              <input id="captureCenter" type="number" step="0.001" value="936.950" />
+            </div>
+            <div class="control">
+              <label for="captureSpan">Span (kHz)</label>
+              <input id="captureSpan" type="number" min="0" step="1" value="20" />
+            </div>
+          </div>
+          <div class="inline">
+            <div class="control">
+              <label for="captureMethod">Metric</label>
+              <select id="captureMethod">
+                <option value="max" selected>Band max</option>
+                <option value="mean">Band mean</option>
+                <option value="median">Band median</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="captureThreshold">Threshold (dBm)</label>
+              <input id="captureThreshold" type="number" step="0.1" value="-105" />
+            </div>
+          </div>
+          <div class="control">
+            <label class="checkline"><input type="checkbox" id="thresholdEnable" checked /> Use threshold gate</label>
+          </div>
+          <div class="control">
+            <label class="checkline"><input type="checkbox" id="autoCapture" /> Auto-capture each new sweep</label>
+          </div>
+          <div class="row-buttons three">
+            <button class="btn" id="captureNowBtn">Capture now</button>
+            <button class="btn" id="clearCaptureBtn">Clear</button>
+            <button class="btn" id="exportCaptureBtn">Export CSV</button>
+          </div>
+          <div class="capture-meta">
+            <div class="mini">Captures: <strong id="captureCount">0</strong></div>
+            <div class="mini">Last: <strong id="lastCapture">-</strong></div>
+          </div>
+          <div class="capture-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Sweep</th>
+                  <th>Freq (MHz)</th>
+                  <th>dBm</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody id="captureRows">
+                <tr><td colspan="5" class="muted">No captures yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -118,6 +701,8 @@
         <div class="stat"><div class="k">Bins</div><div class="v" id="binsCount">0</div></div>
         <div class="stat"><div class="k">Center (MHz)</div><div class="v" id="centerFreq">-</div></div>
         <div class="stat"><div class="k">RBW (Hz)</div><div class="v" id="rbwValue">-</div></div>
+        <div class="stat"><div class="k">Parsed/Lines</div><div class="v" id="parsedRatio">0/0</div></div>
+        <div class="stat"><div class="k">Repair/Drop</div><div class="v" id="repairDrop">0/0</div></div>
       </div>
       <div class="status" id="statusMsg">Waiting for data...</div>
     </div>
@@ -138,157 +723,1049 @@ const sampleData = `21-04-26 19:05:03  2800 936943750 108 -112 -111 -111 -110 -1
 21-04-26 19:05:04  2800 936943750 108 -112 -112 -112 -111 -110 -111 -111 -111 -110 -110 -111 -110 -111 -110 -111 -110 -110 -110 -111 -110 -111 -110 -111 -110 -111 -111 -111 -111 -110 -111 -110 -104 -103 -109 -112 -112 -111 -112 -112 -112 -112 -113 -111 -111 -112 -112 -113 -110 -112 -111 -111 -112 -111 -111 -112 -111 -111 -111 -111 -112 -112 -112 -111 -112 -110 -111 -110 -112 -111 -111 -111 -111 -111 -111 -111 -110 -111 -110 -109 -110 -111 -110 -110 -110 -110 -109 -110 -110 -110 -110 -111 -109 -110 -109 -108 -103 -106 -109 -111 -111 -111 -112 -111 -110 -111 -110 -111 -112`;
 
 const E = {
-  fileInput:document.getElementById('fileInput'),
-  loadSampleBtn:document.getElementById('loadSampleBtn'),
-  viewMode:document.getElementById('viewMode'),
-  frameSlider:document.getElementById('frameSlider'),
-  playSpeed:document.getElementById('playSpeed'),
-  autoY:document.getElementById('autoY'),
-  refLevel:document.getElementById('refLevel'),
-  yPerDiv:document.getElementById('yPerDiv'),
-  yDivCount:document.getElementById('yDivCount'),
-  markerEnable:document.getElementById('markerEnable'),
-  markerType:document.getElementById('markerType'),
-  peakSearch:document.getElementById('peakSearch'),
-  markerFreq:document.getElementById('markerFreq'),
-  playBtn:document.getElementById('playBtn'),
-  resetHoldBtn:document.getElementById('resetHoldBtn'),
-  sweepsCount:document.getElementById('sweepsCount'),
-  binsCount:document.getElementById('binsCount'),
-  centerFreq:document.getElementById('centerFreq'),
-  rbwValue:document.getElementById('rbwValue'),
-  statusMsg:document.getElementById('statusMsg'),
-  legend:document.getElementById('chartLegend'),
-  yBox:document.getElementById('ySettingsBox'),
-  mBox:document.getElementById('markerBox')
+  fileInput: document.getElementById("fileInput"),
+  loadSampleBtn: document.getElementById("loadSampleBtn"),
+  viewMode: document.getElementById("viewMode"),
+  frameSlider: document.getElementById("frameSlider"),
+  currentSweepLabel: document.getElementById("currentSweepLabel"),
+  spectrogramScaleMode: document.getElementById("spectrogramScaleMode"),
+  spectrogramScaleInputs: document.getElementById("spectrogramScaleInputs"),
+  spectrogramMinDbm: document.getElementById("spectrogramMinDbm"),
+  spectrogramMaxDbm: document.getElementById("spectrogramMaxDbm"),
+  playSpeed: document.getElementById("playSpeed"),
+  autoY: document.getElementById("autoY"),
+  refLevel: document.getElementById("refLevel"),
+  yPerDiv: document.getElementById("yPerDiv"),
+  yDivCount: document.getElementById("yDivCount"),
+  markerEnable: document.getElementById("markerEnable"),
+  markerType: document.getElementById("markerType"),
+  peakSearch: document.getElementById("peakSearch"),
+  markerFreq: document.getElementById("markerFreq"),
+  playBtn: document.getElementById("playBtn"),
+  resetHoldBtn: document.getElementById("resetHoldBtn"),
+  sweepsCount: document.getElementById("sweepsCount"),
+  binsCount: document.getElementById("binsCount"),
+  centerFreq: document.getElementById("centerFreq"),
+  rbwValue: document.getElementById("rbwValue"),
+  parsedRatio: document.getElementById("parsedRatio"),
+  repairDrop: document.getElementById("repairDrop"),
+  statusMsg: document.getElementById("statusMsg"),
+  qualitySummary: document.getElementById("qualitySummary"),
+  legend: document.getElementById("chartLegend"),
+  yBox: document.getElementById("ySettingsBox"),
+  mBox: document.getElementById("markerBox"),
+  qualityGate: document.getElementById("qualityGate"),
+  minValidPercent: document.getElementById("minValidPercent"),
+  missingPolicy: document.getElementById("missingPolicy"),
+  avgWindow: document.getElementById("avgWindow"),
+  smoothMode: document.getElementById("smoothMode"),
+  despikeEnable: document.getElementById("despikeEnable"),
+  despikeThreshold: document.getElementById("despikeThreshold"),
+  captureCenter: document.getElementById("captureCenter"),
+  captureSpan: document.getElementById("captureSpan"),
+  captureMethod: document.getElementById("captureMethod"),
+  captureThreshold: document.getElementById("captureThreshold"),
+  thresholdEnable: document.getElementById("thresholdEnable"),
+  autoCapture: document.getElementById("autoCapture"),
+  captureNowBtn: document.getElementById("captureNowBtn"),
+  clearCaptureBtn: document.getElementById("clearCaptureBtn"),
+  exportCaptureBtn: document.getElementById("exportCaptureBtn"),
+  captureCount: document.getElementById("captureCount"),
+  lastCapture: document.getElementById("lastCapture"),
+  captureRows: document.getElementById("captureRows"),
+  peakSearchCtrl: document.getElementById("peakSearchCtrl"),
+  markerFreqCtrl: document.getElementById("markerFreqCtrl"),
+  showAllControlsBtn: document.getElementById("showAllControlsBtn"),
+  tabButtons: document.querySelectorAll("[data-tab-target]"),
+  tabPanels: document.querySelectorAll("[data-tab-panel]")
 };
 
-const S = {frames:[],currentIndex:0,maxHold:[],playing:false,timer:null};
+const S = {
+  sourceText: "",
+  frames: [],
+  currentIndex: 0,
+  maxHold: [],
+  playing: false,
+  timer: null,
+  metrics: {
+    lines: 0,
+    accepted: 0,
+    repaired: 0,
+    dropped: 0,
+    droppedQuality: 0
+  },
+  processCache: new Map(),
+  captures: [],
+  lastAutoEvaluatedSweep: -1,
+  activeTab: "core",
+  showAllControls: false
+};
 
-function parseLine(line){
-  const p=line.trim().split(/\s+/);
-  if(p.length<6) return null;
-  const rbw=Number(p[2]),center=Number(p[3]),count=Number(p[4]);
-  const samples=p.slice(5).map(Number).filter(v=>!Number.isNaN(v)).slice(0,count);
-  if(!Number.isFinite(rbw)||!Number.isFinite(center)||samples.length<count) return null;
-  const start=center-((count-1)/2)*rbw;
-  return{timestamp:`${p[0]} ${p[1]}`,rbw,center,count,samples,freqs:Array.from({length:count},(_,i)=>(start+i*rbw)/1e6)};
+function setStatus(msg, tone = "info") {
+  E.statusMsg.classList.remove("is-ok", "is-warn", "is-error");
+  if (tone === "ok") E.statusMsg.classList.add("is-ok");
+  if (tone === "warn") E.statusMsg.classList.add("is-warn");
+  if (tone === "error") E.statusMsg.classList.add("is-error");
+  E.statusMsg.textContent = msg;
 }
 
-function parseContent(t){return t.split(/\r?\n/).map(parseLine).filter(Boolean)}
-
-function yCfg(){
-  if(E.autoY.checked) return{autorange:true};
-  const top=Number(E.refLevel.value)||-100,per=Number(E.yPerDiv.value)||5,divs=Number(E.yDivCount.value)||8;
-  return{autorange:false,range:[top-per*divs,top],dtick:per};
+function clamp(n, low, high) {
+  return Math.min(high, Math.max(low, n));
 }
 
-function markerTrace(frame){
-  if(!E.markerEnable.checked) return null;
-  let i, val;
-  if(E.markerType.value==='peak'){
-    const src=E.peakSearch.value==='maxhold'?S.maxHold:frame.samples;
-    i=src.indexOf(Math.max(...src));
-    val=src[i];
+function parserOptions() {
+  return {
+    qualityGate: E.qualityGate.checked,
+    minValidPercent: clamp(Number(E.minValidPercent.value) || 0, 0, 100),
+    missingPolicy: E.missingPolicy.value
+  };
+}
+
+function yCfg() {
+  if (E.autoY.checked) {
+    return { autorange: true };
+  }
+  const top = Number(E.refLevel.value) || -100;
+  const per = Number(E.yPerDiv.value) || 5;
+  const divs = Number(E.yDivCount.value) || 8;
+  return { autorange: false, range: [top - per * divs, top], dtick: per };
+}
+
+function spectrogramScaleCfg() {
+  if (E.spectrogramScaleMode.value === "auto") {
+    return { auto: true };
+  }
+  let min = Number(E.spectrogramMinDbm.value);
+  let max = Number(E.spectrogramMaxDbm.value);
+  if (!Number.isFinite(min)) min = -130;
+  if (!Number.isFinite(max)) max = -70;
+  if (min >= max) {
+    min = max - 1;
+  }
+  return { auto: false, min, max };
+}
+
+function updateSpectrogramScaleUi() {
+  const isAuto = E.spectrogramScaleMode.value === "auto";
+  E.spectrogramScaleInputs.style.display = isAuto ? "none" : "grid";
+  E.spectrogramMinDbm.disabled = isAuto;
+  E.spectrogramMaxDbm.disabled = isAuto;
+}
+
+function repairSamples(raw, targetCount, policy) {
+  if (raw.length >= targetCount) {
+    return { samples: raw.slice(0, targetCount), repaired: false };
+  }
+  if (raw.length === 0 || targetCount <= 0) {
+    return null;
+  }
+  if (policy === "drop") {
+    return null;
+  }
+  if (policy === "pad") {
+    const out = raw.slice();
+    while (out.length < targetCount) {
+      out.push(out[out.length - 1]);
+    }
+    return { samples: out, repaired: true };
+  }
+
+  if (raw.length === 1 || targetCount === 1) {
+    return { samples: Array.from({ length: targetCount }, () => raw[0]), repaired: true };
+  }
+
+  const out = [];
+  const step = (raw.length - 1) / (targetCount - 1);
+  for (let i = 0; i < targetCount; i++) {
+    const pos = i * step;
+    const left = Math.floor(pos);
+    const right = Math.min(raw.length - 1, left + 1);
+    const t = pos - left;
+    const interpolated = raw[left] + (raw[right] - raw[left]) * t;
+    out.push(interpolated);
+  }
+  return { samples: out, repaired: true };
+}
+
+function parseLine(line, opts) {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const tokens = trimmed
+    .replace(/,/g, " ")
+    .split(/\s+/)
+    .map((token) => token.replace(/[;]+$/, ""));
+
+  if (tokens.length < 5) {
+    return { error: "too_few_tokens" };
+  }
+
+  let index = 0;
+  let timestamp = "n/a";
+  const looksNumericHeader = Number.isFinite(Number(tokens[0])) && Number.isFinite(Number(tokens[1]));
+  if (!looksNumericHeader) {
+    timestamp = `${tokens[0] || ""} ${tokens[1] || ""}`.trim();
+    index = 2;
+  }
+
+  const rbw = Number(tokens[index]);
+  const center = Number(tokens[index + 1]);
+  const count = Math.floor(Number(tokens[index + 2]));
+  const sampleTokens = tokens.slice(index + 3);
+  const rawSamples = sampleTokens.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+
+  if (!Number.isFinite(rbw) || !Number.isFinite(center) || !Number.isFinite(count) || count < 2) {
+    return { error: "invalid_meta" };
+  }
+
+  const validPercent = (rawSamples.length / count) * 100;
+  if (opts.qualityGate && validPercent < opts.minValidPercent) {
+    return { error: "quality_reject", validPercent };
+  }
+
+  const fixed = repairSamples(rawSamples, count, opts.missingPolicy);
+  if (!fixed) {
+    return { error: "missing_bins", validPercent };
+  }
+
+  const start = center - ((count - 1) / 2) * rbw;
+  const freqs = Array.from({ length: count }, (_, i) => (start + i * rbw) / 1e6);
+  return {
+    frame: {
+      timestamp,
+      rbw,
+      center,
+      count,
+      samples: fixed.samples,
+      freqs,
+      validPercent
+    },
+    repaired: fixed.repaired
+  };
+}
+
+function parseContent(text, opts) {
+  const lines = text.split(/\r?\n/);
+  const frames = [];
+  const metrics = {
+    lines: 0,
+    accepted: 0,
+    repaired: 0,
+    dropped: 0,
+    droppedQuality: 0
+  };
+
+  for (const line of lines) {
+    if (!line.trim()) {
+      continue;
+    }
+    metrics.lines += 1;
+    const parsed = parseLine(line, opts);
+    if (!parsed || !parsed.frame) {
+      metrics.dropped += 1;
+      if (parsed && parsed.error === "quality_reject") {
+        metrics.droppedQuality += 1;
+      }
+      continue;
+    }
+    frames.push(parsed.frame);
+    metrics.accepted += 1;
+    if (parsed.repaired) {
+      metrics.repaired += 1;
+    }
+  }
+  return { frames, metrics };
+}
+
+function movingAverage(values, width) {
+  const out = new Array(values.length);
+  const half = Math.floor(width / 2);
+  for (let i = 0; i < values.length; i++) {
+    let sum = 0;
+    let count = 0;
+    const start = Math.max(0, i - half);
+    const end = Math.min(values.length - 1, i + half);
+    for (let j = start; j <= end; j++) {
+      sum += values[j];
+      count += 1;
+    }
+    out[i] = sum / count;
+  }
+  return out;
+}
+
+function medianOf3(a, b, c) {
+  if ((a <= b && b <= c) || (c <= b && b <= a)) return b;
+  if ((b <= a && a <= c) || (c <= a && a <= b)) return a;
+  return c;
+}
+
+function medianFilter3(values) {
+  if (values.length < 3) {
+    return values.slice();
+  }
+  const out = values.slice();
+  for (let i = 1; i < values.length - 1; i++) {
+    out[i] = medianOf3(values[i - 1], values[i], values[i + 1]);
+  }
+  return out;
+}
+
+function despike(values, thresholdDb) {
+  if (values.length < 3) {
+    return values.slice();
+  }
+  const out = values.slice();
+  for (let i = 1; i < values.length - 1; i++) {
+    const localMean = (values[i - 1] + values[i + 1]) / 2;
+    if (Math.abs(values[i] - localMean) > thresholdDb) {
+      out[i] = localMean;
+    }
+  }
+  return out;
+}
+
+function processingConfig() {
+  return {
+    avgWindow: Math.max(1, Number(E.avgWindow.value) || 1),
+    smoothMode: E.smoothMode.value,
+    despikeEnable: E.despikeEnable.checked,
+    despikeThreshold: Math.max(1, Number(E.despikeThreshold.value) || 12)
+  };
+}
+
+function processKey(index, cfg) {
+  return `${index}|${cfg.avgWindow}|${cfg.smoothMode}|${cfg.despikeEnable ? 1 : 0}|${cfg.despikeThreshold}`;
+}
+
+function getProcessedSamples(index) {
+  const frame = S.frames[index];
+  if (!frame) {
+    return [];
+  }
+
+  const cfg = processingConfig();
+  const key = processKey(index, cfg);
+  if (S.processCache.has(key)) {
+    return S.processCache.get(key);
+  }
+
+  const start = Math.max(0, index - cfg.avgWindow + 1);
+  const sweepCount = index - start + 1;
+  const avg = new Array(frame.count).fill(0);
+  for (let i = start; i <= index; i++) {
+    const samples = S.frames[i].samples;
+    for (let j = 0; j < frame.count; j++) {
+      avg[j] += samples[j];
+    }
+  }
+  for (let j = 0; j < frame.count; j++) {
+    avg[j] /= sweepCount;
+  }
+
+  let conditioned = avg;
+  if (cfg.smoothMode === "mavg3") conditioned = movingAverage(conditioned, 3);
+  if (cfg.smoothMode === "mavg5") conditioned = movingAverage(conditioned, 5);
+  if (cfg.smoothMode === "median3") conditioned = medianFilter3(conditioned);
+  if (cfg.despikeEnable) conditioned = despike(conditioned, cfg.despikeThreshold);
+
+  S.processCache.set(key, conditioned);
+  return conditioned;
+}
+
+function resetProcessingCache(resetHold) {
+  S.processCache.clear();
+  if (resetHold) {
+    S.maxHold = [];
+  }
+}
+
+function markerTrace(frame, currentSamples) {
+  if (!E.markerEnable.checked) {
+    return null;
+  }
+  if (!currentSamples.length) {
+    return null;
+  }
+
+  let index = 0;
+  let val = currentSamples[0];
+  let usedMaxHold = false;
+
+  if (E.markerType.value === "peak") {
+    const src = (E.peakSearch.value === "maxhold" && S.maxHold.length === currentSamples.length)
+      ? S.maxHold
+      : currentSamples;
+    usedMaxHold = src === S.maxHold;
+    const best = Math.max(...src);
+    index = src.indexOf(best);
+    val = src[index];
   } else {
-    const target=Number(E.markerFreq.value);
-    i=frame.freqs.reduce((p,c,idx)=>Math.abs(c-target)<Math.abs(frame.freqs[p]-target)?idx:p,0);
-    val=frame.samples[i];
+    const target = Number(E.markerFreq.value);
+    index = frame.freqs.reduce((bestIndex, freq, i) => {
+      const currentBest = Math.abs(frame.freqs[bestIndex] - target);
+      const next = Math.abs(freq - target);
+      return next < currentBest ? i : bestIndex;
+    }, 0);
+    val = currentSamples[index];
   }
-  return {x:[frame.freqs[i]],y:[val],mode:'markers+text',text:[`${val} dBm`],textposition:'top center',marker:{color:'#ffd166',size:10,symbol:'circle'}};
-}
 
-function draw(updateHold=true){
-  if(!S.frames.length) return;
-  
-  if(E.viewMode.value === 'spectrogram') {
-    drawSpectrogram();
-    E.legend.style.display = 'none';
-    E.yBox.style.display = 'none';
-    E.mBox.style.display = 'none';
-    return;
-  }
-  
-  E.legend.style.display = 'flex';
-  E.yBox.style.display = 'block';
-  E.mBox.style.display = 'block';
-
-  const f=S.frames[S.currentIndex];
-  if(!S.maxHold.length || S.maxHold.length !== f.samples.length) S.maxHold=[...f.samples];
-  else if(updateHold) S.maxHold=S.maxHold.map((v,i)=>Math.max(v,f.samples[i]));
-
-  E.sweepsCount.textContent=S.frames.length;
-  E.binsCount.textContent=f.count;
-  E.centerFreq.textContent=(f.center/1e6).toFixed(3);
-  E.rbwValue.textContent=f.rbw;
-  E.frameSlider.max=S.frames.length-1;
-  E.frameSlider.value=S.currentIndex;
-
-  const mt=markerTrace(f);
-  const traces=[
-    {x:f.freqs,y:f.samples,name:'Current',line:{color:'#6ec6ff',width:2}},
-    {x:f.freqs,y:S.maxHold,name:'Max Hold',line:{color:'#ff7a93',width:1.5,dash:'dot'}}
-  ];
-  if(mt) traces.push(mt);
-
-  const y=yCfg();
-  Plotly.react('plot',traces,{
-    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'#171717',font:{color:'#f2f2f2'},showlegend:false,
-    margin:{t:30,b:50,l:60,r:20},
-    xaxis:{title:'Frequency (MHz)',gridcolor:'#333'},
-    yaxis:{title:'Amplitude (dBm)',gridcolor:'#333',autorange:y.autorange,range:y.range,dtick:y.dtick}
-  },{responsive:true,displaylogo:false});
+  const label = `${frame.freqs[index].toFixed(3)} MHz | ${val.toFixed(1)} dBm${usedMaxHold ? " (hold)" : ""}`;
+  return {
+    x: [frame.freqs[index]],
+    y: [val],
+    mode: "markers+text",
+    text: [label],
+    textposition: "top center",
+    marker: { color: "#ffd166", size: 10, symbol: "circle" },
+    hoverinfo: "skip"
+  };
 }
 
 function drawSpectrogram() {
-  if(!S.frames.length) return;
-  const times = S.frames.map(f => f.timestamp);
-  const transposedZ = S.frames[0].samples.map((_, colIndex) => S.frames.map(row => row.samples[colIndex]));
-  const freqLabels = S.frames[0].freqs;
+  if (!S.frames.length) {
+    return;
+  }
+  const maxSweeps = 420;
+  const startIndex = Math.max(0, S.frames.length - maxSweeps);
+  const sliceFrames = S.frames.slice(startIndex);
+  const slices = [];
+  for (let i = startIndex; i < S.frames.length; i++) {
+    slices.push(getProcessedSamples(i));
+  }
+  const minBins = Math.min(...slices.map((arr) => arr.length));
+  const clipped = slices.map((arr) => arr.slice(0, minBins));
+  const z = Array.from({ length: minBins }, (_, binIndex) => clipped.map((row) => row[binIndex]));
+  const x = sliceFrames.map((f, idx) => `${f.timestamp} [${startIndex + idx + 1}]`);
+  const y = sliceFrames[0].freqs.slice(0, minBins);
 
-  const data = [{
-    z: transposedZ,
-    x: times,
-    y: freqLabels,
-    type: 'heatmap',
-    colorscale: 'Viridis',
+  const scale = spectrogramScaleCfg();
+  const heatmap = {
+    z,
+    x,
+    y,
+    type: "heatmap",
+    colorscale: "Viridis",
     showscale: true,
-    colorbar: { title: 'dBm', titleside: 'right', tickfont: {color:'#fff'} }
-  }];
+    colorbar: { title: "dBm", tickfont: { color: "#fff" } }
+  };
+  if (!scale.auto) {
+    heatmap.zmin = scale.min;
+    heatmap.zmax = scale.max;
+    heatmap.zauto = false;
+  }
 
-  const layout = {
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: '#171717',
-    font: { color: '#f2f2f2' },
+  Plotly.react("plot", [heatmap], {
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "#171717",
+    font: { color: "#f2f2f2" },
     margin: { t: 30, b: 80, l: 80, r: 20 },
-    xaxis: { title: 'Time (Timestamp)', gridcolor: '#333', tickangle: -45 },
-    yaxis: { title: 'Frequency (MHz)', gridcolor: '#333' }
+    xaxis: { title: "Time / Sweep", gridcolor: "#333", tickangle: -40 },
+    yaxis: { title: "Frequency (MHz)", gridcolor: "#333" }
+  }, {
+    responsive: true,
+    displaylogo: false
+  });
+}
+
+function updateStats(frame) {
+  E.sweepsCount.textContent = String(S.frames.length);
+  E.binsCount.textContent = frame ? String(frame.count) : "0";
+  E.centerFreq.textContent = frame ? (frame.center / 1e6).toFixed(3) : "-";
+  E.rbwValue.textContent = frame ? String(frame.rbw) : "-";
+  E.parsedRatio.textContent = `${S.metrics.accepted}/${S.metrics.lines}`;
+  E.repairDrop.textContent = `${S.metrics.repaired}/${S.metrics.dropped}`;
+  E.currentSweepLabel.textContent = S.frames.length ? `${S.currentIndex + 1} / ${S.frames.length}` : "0 / 0";
+
+  if (S.metrics.lines === 0) {
+    E.qualitySummary.innerHTML = "No source loaded.";
+    return;
+  }
+  const passPct = ((S.metrics.accepted / S.metrics.lines) * 100).toFixed(1);
+  const qualityClass = passPct >= 90 ? "good" : passPct >= 70 ? "warn" : "bad";
+  E.qualitySummary.innerHTML =
+    `<span class="${qualityClass}"><span class="dot" style="background:currentColor"></span>${passPct}% sweeps accepted</span> ` +
+    `<strong>${S.metrics.repaired}</strong> repaired, <strong>${S.metrics.droppedQuality}</strong> quality-rejected.`;
+}
+
+function draw(updateHold) {
+  if (!S.frames.length) {
+    Plotly.react("plot", [], {
+      paper_bgcolor: "#0f0f0f",
+      plot_bgcolor: "#171717",
+      xaxis: { visible: false },
+      yaxis: { visible: false }
+    }, { responsive: true, displaylogo: false });
+    updateStats(null);
+    return;
+  }
+
+  S.currentIndex = clamp(S.currentIndex, 0, S.frames.length - 1);
+  const frame = S.frames[S.currentIndex];
+  const currentSamples = getProcessedSamples(S.currentIndex);
+  E.frameSlider.max = String(S.frames.length - 1);
+  E.frameSlider.value = String(S.currentIndex);
+  updateStats(frame);
+
+  if (E.viewMode.value === "spectrogram") {
+    E.legend.style.display = "none";
+    E.yBox.style.display = "none";
+    E.mBox.style.display = "none";
+    drawSpectrogram();
+    maybeAutoCapture();
+    return;
+  }
+
+  E.legend.style.display = "flex";
+  E.yBox.style.display = "block";
+  E.mBox.style.display = "block";
+
+  if (!S.maxHold.length || S.maxHold.length !== currentSamples.length) {
+    S.maxHold = currentSamples.slice();
+  } else if (updateHold) {
+    for (let i = 0; i < S.maxHold.length; i++) {
+      if (currentSamples[i] > S.maxHold[i]) {
+        S.maxHold[i] = currentSamples[i];
+      }
+    }
+  }
+
+  const traces = [
+    {
+      x: frame.freqs,
+      y: currentSamples,
+      name: "Current",
+      line: { color: "#6ec6ff", width: 2 }
+    },
+    {
+      x: frame.freqs,
+      y: S.maxHold,
+      name: "Max Hold",
+      line: { color: "#ff7a93", width: 1.5, dash: "dot" }
+    }
+  ];
+  const marker = markerTrace(frame, currentSamples);
+  if (marker) traces.push(marker);
+
+  const y = yCfg();
+  Plotly.react("plot", traces, {
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "#171717",
+    font: { color: "#f2f2f2" },
+    showlegend: false,
+    margin: { t: 30, b: 50, l: 60, r: 20 },
+    xaxis: { title: "Frequency (MHz)", gridcolor: "#333" },
+    yaxis: {
+      title: "Amplitude (dBm)",
+      gridcolor: "#333",
+      autorange: y.autorange,
+      range: y.range,
+      dtick: y.dtick
+    }
+  }, {
+    responsive: true,
+    displaylogo: false
+  });
+
+  maybeAutoCapture();
+}
+
+function stopPlayback() {
+  if (S.timer) {
+    clearInterval(S.timer);
+    S.timer = null;
+  }
+  S.playing = false;
+  E.playBtn.textContent = "Play";
+  E.playBtn.classList.remove("is-playing");
+}
+
+function startPlayback() {
+  if (!S.frames.length) {
+    setStatus("Load a valid scan file before playback.", "warn");
+    return;
+  }
+  stopPlayback();
+  S.playing = true;
+  E.playBtn.textContent = "Pause";
+  E.playBtn.classList.add("is-playing");
+  const interval = Math.max(25, Number(E.playSpeed.value) || 500);
+  S.timer = setInterval(() => {
+    if (!S.frames.length) {
+      stopPlayback();
+      return;
+    }
+    S.currentIndex = (S.currentIndex + 1) % S.frames.length;
+    S.lastAutoEvaluatedSweep = -1;
+    draw(true);
+  }, interval);
+}
+
+function loadFrames(frames, metrics, sourceLabel) {
+  stopPlayback();
+  S.frames = frames;
+  S.metrics = metrics;
+  S.currentIndex = 0;
+  S.maxHold = [];
+  resetProcessingCache(false);
+  S.lastAutoEvaluatedSweep = -1;
+  S.captures = [];
+  updateCaptureTable();
+
+  if (!frames.length) {
+    draw(false);
+    setStatus(`No valid sweeps parsed from ${sourceLabel}. Check integrity settings or file format.`, "error");
+    return;
+  }
+
+  E.captureCenter.value = (frames[0].center / 1e6).toFixed(3);
+  E.markerFreq.value = (frames[0].center / 1e6).toFixed(3);
+  draw(false);
+  const stitchedNote = frames.length < metrics.accepted
+    ? ` (stitched into ${frames.length} continuous sweep${frames.length > 1 ? "s" : ""})`
+    : "";
+  setStatus(
+    `Loaded ${frames.length} sweep${frames.length !== 1 ? "s" : ""} from ${sourceLabel}${stitchedNote}. ` +
+    `${metrics.repaired} repaired, ${metrics.dropped} dropped (${metrics.droppedQuality} quality rejected).`,
+    "ok"
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Continuous-sweep stitching
+// ---------------------------------------------------------------------------
+// Many scan files contain stepped sub-band sweeps: each line is a narrow
+// slice at one center frequency, and together consecutive lines cover a wide
+// band.  This function detects such files and merges the sub-band slices into
+// one composite frame per scan cycle so the plot shows the full X-axis range.
+//
+// Detection rule (in time order, no sorting):
+//   • All frames share the same RBW.
+//   • The first inter-frame center-frequency step is > 0 (freq is increasing).
+//   • A new cycle starts when center freq goes DOWN relative to the previous
+//     frame, OR jumps forward by more than 3× the first observed step.
+//
+// Composite build: merge every (freq, sample) bin from the cycle's slices into
+// a single sorted array.  Duplicate frequencies keep the later value.
+// ---------------------------------------------------------------------------
+
+function stitchContinuousSweeps(frames) {
+  if (frames.length < 2) return frames;
+
+  // All frames must share the same RBW for stitching to be meaningful.
+  const refRbw = frames[0].rbw;
+  if (!frames.every(f => f.rbw === refRbw)) return frames;
+
+  // Measure the first non-zero center-frequency step (in time order).
+  let firstStep = 0;
+  for (let i = 1; i < frames.length; i++) {
+    const d = frames[i].center - frames[i - 1].center;
+    if (d !== 0) { firstStep = d; break; }
+  }
+
+  // If every frame has the same center this is a normal repeated sweep – don't stitch.
+  if (firstStep === 0) return frames;
+
+  // If the step is negative the file starts by sweeping downward – still stitch,
+  // just detect cycle wraps by the frequency going UP instead.
+  const sweepingUp = firstStep > 0;
+
+  // ---- group frames into scan cycles in time order -------------------------
+  // A new cycle starts when:
+  //   • sweepingUp  && current center ≤ previous center  (freq wrapped back down)
+  //   • sweepingDown && current center ≥ previous center (freq wrapped back up)
+  //   • |delta| > 3 × |firstStep|  (large gap = scanner jumped to a new band)
+  const cycles = [];
+  let cycle = [frames[0]];
+
+  for (let i = 1; i < frames.length; i++) {
+    const delta = frames[i].center - frames[i - 1].center;
+    const wrapped   = sweepingUp ? delta <= 0 : delta >= 0;
+    const bigJump   = Math.abs(delta) > Math.abs(firstStep) * 3;
+
+    if (wrapped || bigJump) {
+      cycles.push(cycle);
+      cycle = [frames[i]];
+    } else {
+      cycle.push(frames[i]);
+    }
+  }
+  cycles.push(cycle);
+
+  // If every "cycle" is just 1 frame long, the file isn't a stepped sweep.
+  const avgCycleLen = frames.length / cycles.length;
+  if (avgCycleLen < 2) return frames;
+
+  // ---- build one composite frame per cycle ---------------------------------
+  function buildComposite(slice) {
+    if (slice.length === 1) return slice[0];
+
+    // Merge all bins; duplicate freq keys keep the last (latest) value.
+    const binMap = new Map();
+    for (const f of slice) {
+      for (let i = 0; i < f.freqs.length; i++) {
+        binMap.set(f.freqs[i].toFixed(5), { freq: f.freqs[i], sample: f.samples[i] });
+      }
+    }
+
+    const sorted  = Array.from(binMap.values()).sort((a, b) => a.freq - b.freq);
+    const freqs   = sorted.map(b => b.freq);
+    const samples = sorted.map(b => b.sample);
+    const last    = slice[slice.length - 1];
+
+    return {
+      timestamp:    last.timestamp,
+      rbw:          last.rbw,
+      center:       (freqs[0] + freqs[freqs.length - 1]) / 2 * 1e6,
+      count:        freqs.length,
+      samples,
+      freqs,
+      validPercent: 100
+    };
+  }
+
+  return cycles.map(buildComposite);
+}
+
+function parseAndLoadFromText(text, sourceLabel) {
+  S.sourceText = text;
+  const parsed = parseContent(text, parserOptions());
+  const stitched = stitchContinuousSweeps(parsed.frames);
+
+  // Adjust metrics to reflect stitching
+  const stitchedMetrics = Object.assign({}, parsed.metrics);
+  loadFrames(stitched, stitchedMetrics, sourceLabel);
+}
+
+function reparseCurrentSource() {
+  if (!S.sourceText) {
+    return;
+  }
+  const preserveIndex = S.currentIndex;
+  const parsed = parseContent(S.sourceText, parserOptions());
+  const stitched = stitchContinuousSweeps(parsed.frames);
+  loadFrames(stitched, parsed.metrics, "current source (reparsed)");
+  if (S.frames.length) {
+    S.currentIndex = clamp(preserveIndex, 0, S.frames.length - 1);
+    S.maxHold = [];
+    draw(false);
+  }
+}
+
+function updateMarkerControls() {
+  const manual = E.markerType.value === "manual";
+  E.markerFreqCtrl.style.display = manual ? "block" : "none";
+  E.peakSearchCtrl.style.display = manual ? "none" : "block";
+}
+
+function updateYControlsState() {
+  const disabled = E.autoY.checked;
+  E.refLevel.disabled = disabled;
+  E.yPerDiv.disabled = disabled;
+  E.yDivCount.disabled = disabled;
+}
+
+function applyTabState() {
+  E.tabButtons.forEach((button) => {
+    const target = button.dataset.tabTarget;
+    const selected = !S.showAllControls && target === S.activeTab;
+    button.classList.toggle("is-active", selected);
+  });
+  E.tabPanels.forEach((panel) => {
+    const panelName = panel.dataset.tabPanel;
+    const visible = S.showAllControls || panelName === S.activeTab;
+    panel.classList.toggle("is-active", visible);
+  });
+  E.showAllControlsBtn.classList.toggle("is-active", S.showAllControls);
+  E.showAllControlsBtn.textContent = S.showAllControls ? "Use guided tabs" : "Show all controls";
+}
+
+function activateTab(name) {
+  S.activeTab = name;
+  S.showAllControls = false;
+  applyTabState();
+}
+
+function initTabs() {
+  E.tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.tabTarget || "core";
+      activateTab(target);
+    });
+  });
+  E.showAllControlsBtn.addEventListener("click", () => {
+    S.showAllControls = !S.showAllControls;
+    applyTabState();
+  });
+  applyTabState();
+}
+
+function nearestIndex(values, target) {
+  return values.reduce((best, value, idx) => {
+    const bestDelta = Math.abs(values[best] - target);
+    const nextDelta = Math.abs(value - target);
+    return nextDelta < bestDelta ? idx : best;
+  }, 0);
+}
+
+function median(values) {
+  if (!values.length) return NaN;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2) return sorted[mid];
+  return (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function captureAtCurrent(mode) {
+  if (!S.frames.length) {
+    return false;
+  }
+  const frame = S.frames[S.currentIndex];
+  const currentSamples = getProcessedSamples(S.currentIndex);
+  if (!currentSamples.length) {
+    return false;
+  }
+
+  const centerMHzInput = Number(E.captureCenter.value);
+  const centerMHz = Number.isFinite(centerMHzInput) ? centerMHzInput : (frame.center / 1e6);
+  const spanKHz = Math.max(0, Number(E.captureSpan.value) || 0);
+  const spanMHz = spanKHz / 1000;
+  const low = centerMHz - spanMHz / 2;
+  const high = centerMHz + spanMHz / 2;
+
+  let indices = [];
+  if (spanMHz <= 0) {
+    indices = [nearestIndex(frame.freqs, centerMHz)];
+  } else {
+    indices = frame.freqs
+      .map((freq, idx) => (freq >= low && freq <= high ? idx : -1))
+      .filter((idx) => idx >= 0);
+    if (!indices.length) {
+      indices = [nearestIndex(frame.freqs, centerMHz)];
+    }
+  }
+
+  const bandValues = indices.map((i) => currentSamples[i]);
+  const method = E.captureMethod.value;
+  let metric = bandValues[0];
+  let freqMHz = frame.freqs[indices[0]];
+
+  if (method === "max") {
+    const localMax = Math.max(...bandValues);
+    const localIndex = bandValues.indexOf(localMax);
+    metric = localMax;
+    freqMHz = frame.freqs[indices[localIndex]];
+  } else if (method === "mean") {
+    metric = bandValues.reduce((sum, v) => sum + v, 0) / bandValues.length;
+    freqMHz = centerMHz;
+  } else if (method === "median") {
+    metric = median(bandValues);
+    freqMHz = centerMHz;
+  }
+
+  const thresholdEnabled = E.thresholdEnable.checked;
+  const threshold = Number(E.captureThreshold.value);
+  if (thresholdEnabled && Number.isFinite(threshold) && metric < threshold) {
+    return false;
+  }
+
+  S.captures.push({
+    timestamp: frame.timestamp,
+    sweep: S.currentIndex + 1,
+    freqMHz,
+    dbm: metric,
+    mode
+  });
+  if (S.captures.length > 1000) {
+    S.captures = S.captures.slice(S.captures.length - 1000);
+  }
+  updateCaptureTable();
+  return true;
+}
+
+function maybeAutoCapture() {
+  if (!E.autoCapture.checked || !S.frames.length) {
+    return;
+  }
+  if (S.lastAutoEvaluatedSweep === S.currentIndex) {
+    return;
+  }
+  S.lastAutoEvaluatedSweep = S.currentIndex;
+  captureAtCurrent("auto");
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function updateCaptureTable() {
+  E.captureCount.textContent = String(S.captures.length);
+  if (!S.captures.length) {
+    E.lastCapture.textContent = "-";
+    E.captureRows.innerHTML = '<tr><td colspan="5" class="muted">No captures yet.</td></tr>';
+    return;
+  }
+
+  const last = S.captures[S.captures.length - 1];
+  E.lastCapture.textContent = `${last.dbm.toFixed(1)} dBm @ ${last.freqMHz.toFixed(3)}`;
+
+  const rows = S.captures.slice(-18).reverse().map((entry) => {
+    return `<tr>
+      <td>${escapeHtml(entry.timestamp)}</td>
+      <td>${entry.sweep}</td>
+      <td>${entry.freqMHz.toFixed(3)}</td>
+      <td>${entry.dbm.toFixed(1)}</td>
+      <td>${escapeHtml(entry.mode)}</td>
+    </tr>`;
+  });
+  E.captureRows.innerHTML = rows.join("");
+}
+
+function exportCapturesCsv() {
+  if (!S.captures.length) {
+    setStatus("No captures to export.", "warn");
+    return;
+  }
+  const header = "timestamp,sweep,freq_mhz,dbm,mode";
+  const lines = S.captures.map((c) =>
+    `${c.timestamp.replace(/,/g, " ")},${c.sweep},${c.freqMHz.toFixed(6)},${c.dbm.toFixed(3)},${c.mode}`
+  );
+  const csv = [header, ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `captured_samples_${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function attachEvents() {
+  E.fileInput.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    parseAndLoadFromText(text, file.name);
   };
 
-  Plotly.react('plot', data, layout, { responsive: true, displaylogo: false });
+  E.loadSampleBtn.onclick = () => {
+    parseAndLoadFromText(sampleData, "sample data");
+  };
+
+  E.viewMode.onchange = () => {
+    draw(false);
+  };
+
+  E.playBtn.onclick = () => {
+    if (S.playing) {
+      stopPlayback();
+    } else {
+      startPlayback();
+    }
+  };
+
+  E.playSpeed.onchange = () => {
+    if (S.playing) {
+      startPlayback();
+    }
+  };
+
+  E.resetHoldBtn.onclick = () => {
+    S.maxHold = [];
+    draw(false);
+  };
+
+  E.frameSlider.oninput = () => {
+    S.currentIndex = Number(E.frameSlider.value) || 0;
+    S.lastAutoEvaluatedSweep = -1;
+    draw(false);
+  };
+
+  ["spectrogramScaleMode", "spectrogramMinDbm", "spectrogramMaxDbm"].forEach((id) => {
+    E[id].oninput = () => {
+      updateSpectrogramScaleUi();
+      if (E.viewMode.value === "spectrogram") {
+        draw(false);
+      }
+    };
+  });
+
+  ["autoY", "refLevel", "yPerDiv", "yDivCount"].forEach((id) => {
+    E[id].oninput = () => {
+      updateYControlsState();
+      draw(false);
+    };
+  });
+
+  ["markerEnable", "markerType", "peakSearch", "markerFreq"].forEach((id) => {
+    E[id].oninput = () => {
+      updateMarkerControls();
+      draw(false);
+    };
+  });
+
+  ["avgWindow", "smoothMode", "despikeEnable", "despikeThreshold"].forEach((id) => {
+    E[id].oninput = () => {
+      resetProcessingCache(true);
+      draw(false);
+    };
+  });
+
+  ["qualityGate", "minValidPercent", "missingPolicy"].forEach((id) => {
+    E[id].onchange = () => {
+      reparseCurrentSource();
+    };
+  });
+
+  ["captureCenter", "captureSpan", "captureMethod", "captureThreshold", "thresholdEnable", "autoCapture"].forEach((id) => {
+    E[id].oninput = () => {
+      S.lastAutoEvaluatedSweep = -1;
+    };
+  });
+
+  E.captureNowBtn.onclick = () => {
+    const ok = captureAtCurrent("manual");
+    setStatus(
+      ok ? "Capture saved from current sweep." : "Capture conditions not met (threshold or no data).",
+      ok ? "ok" : "warn"
+    );
+  };
+
+  E.clearCaptureBtn.onclick = () => {
+    S.captures = [];
+    updateCaptureTable();
+  };
+
+  E.exportCaptureBtn.onclick = () => {
+    exportCapturesCsv();
+  };
 }
 
-function load(frames){
-  S.frames=frames;
-  S.currentIndex=0;
-  S.maxHold=[];
-  draw(false);
-  E.statusMsg.textContent=`Loaded ${frames.length} sweeps.`;
+function init() {
+  initTabs();
+  attachEvents();
+  updateMarkerControls();
+  updateYControlsState();
+  updateSpectrogramScaleUi();
+  Plotly.newPlot("plot", [], {
+    paper_bgcolor: "#0f0f0f",
+    plot_bgcolor: "#171717"
+  }, {
+    responsive: true,
+    displaylogo: false
+  });
+  updateCaptureTable();
 }
 
-E.fileInput.onchange=async e=>{const f=e.target.files[0];if(f)load(parseContent(await f.text()));};
-E.loadSampleBtn.onclick=()=>load(parseContent(sampleData));
-E.viewMode.onchange=()=>draw(false);
-E.playBtn.onclick=()=>{
-  if(S.playing){clearInterval(S.timer);E.playBtn.textContent='Play';} 
-  else {S.timer=setInterval(()=>{S.currentIndex=(S.currentIndex+1)%S.frames.length;draw(true);},Number(E.playSpeed.value));E.playBtn.textContent='Pause';}
-  S.playing=!S.playing;
-};
-E.resetHoldBtn.onclick=()=>{S.maxHold=[];draw(false);};
-E.frameSlider.oninput=()=>{S.currentIndex=Number(E.frameSlider.value);draw(false);};
-['autoY','refLevel','yPerDiv','yDivCount','markerEnable','markerType','peakSearch','markerFreq'].forEach(id=>E[id].oninput=()=>draw(false));
-
-Plotly.newPlot('plot',[],{paper_bgcolor:'#0f0f0f',plot_bgcolor:'#171717'});
+init();
 </script>
 </body>
 </html>
