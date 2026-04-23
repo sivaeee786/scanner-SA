@@ -59,7 +59,8 @@
   .sidebar {
     padding: 16px;
     overflow-y: auto;
-    max-height: 91vh;
+    height: 690px;
+    max-height: 690px;
     background:
       linear-gradient(180deg, #ffffff 0%, #fbfdf4 100%);
   }
@@ -142,6 +143,19 @@
   .play-btn.is-playing {
     background: linear-gradient(120deg, #ffe6be 0%, #ffdc9f 100%);
     border-color: #e8bf74;
+  }
+  .maxhold-all-btn {
+    background: linear-gradient(120deg, #ffe0e9 0%, #ffc8d5 100%);
+    border-color: #e88a9c;
+    color: #6b1a2a;
+  }
+  .maxhold-all-btn:hover {
+    background: linear-gradient(120deg, #ffd0de 0%, #ffb4c6 100%) !important;
+    border-color: #d96880 !important;
+  }
+  .maxhold-all-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
   .btn:disabled, .play-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .row-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -416,7 +430,7 @@
   .bad { color: var(--bad); }
   @media (max-width:1024px) {
     .main { grid-template-columns: 1fr; }
-    .sidebar { max-height: none; }
+    .sidebar { height: auto; max-height: none; }
     .sidebar-tabs { grid-template-columns: 1fr; }
     .row-buttons.three { grid-template-columns: 1fr; }
     .inline { grid-template-columns: 1fr; }
@@ -429,7 +443,7 @@
 <div class="app">
   <div class="header">
     <h1 class="title">Ondas Spectrum Analyzer Utility</h1>
-    <div class="subtitle">Enhanced Sample Capture, Robust Parsing, Sweep Conditioning | Amplitude: dBm</div>
+
   </div>
 
   <div class="main">
@@ -453,9 +467,6 @@
         <button class="ghost-btn" id="showAllControlsBtn" type="button">Show all controls</button>
       </div>
 
-      <div class="focus-card">
-        <strong>Tip:</strong> Start with <strong>Quick Run</strong>, verify shape and playback, then move to <strong>Signal Tuning</strong> only if data looks noisy.
-      </div>
       <details class="quick-guide">
         <summary>First-time usage guide</summary>
         <ol>
@@ -477,9 +488,10 @@
             </select>
           </div>
           <div class="row-buttons">
-            <button class="play-btn" id="playBtn">Play</button>
+            <button class="play-btn" id="playBtn">▶ Play</button>
             <button class="btn" id="resetHoldBtn">Reset max hold</button>
           </div>
+          <button class="btn maxhold-all-btn" id="maxHoldAllBtn" title="Instantly compute max hold across every sweep in the loaded file">⚡ Max Hold — Full Capture</button>
           <div class="control">
             <label for="playSpeed">Playback speed</label>
             <select id="playSpeed">
@@ -498,7 +510,7 @@
               <strong id="currentSweepLabel">0 / 0</strong>
             </div>
           </div>
-          <div class="spectro-scale-wrap">
+          <div class="spectro-scale-wrap" id="spectroScaleWrap">
             <div class="control">
               <label for="spectrogramScaleMode">Spectrogram intensity scale</label>
               <select id="spectrogramScaleMode">
@@ -520,62 +532,6 @@
           <div class="help">Use slider for frame-by-frame inspection and to validate anomalies before capture.</div>
         </div>
       </div>
-
-      <div class="tab-panel" data-tab-panel="advanced">
-        <div class="section">
-          <h3>Capture Integrity <small>Step 2</small></h3>
-          <div class="control">
-            <label class="checkline"><input type="checkbox" id="qualityGate" checked /> Reject low-completeness sweeps</label>
-          </div>
-          <div class="inline">
-            <div class="control">
-              <label for="minValidPercent">Min valid bins (%)</label>
-              <input id="minValidPercent" type="number" min="0" max="100" step="1" value="90" />
-            </div>
-            <div class="control">
-              <label for="missingPolicy">Missing-bin handling</label>
-              <select id="missingPolicy">
-                <option value="interpolate" selected>Repair by interpolation</option>
-                <option value="pad">Pad with last value</option>
-                <option value="drop">Drop incomplete sweep</option>
-              </select>
-            </div>
-          </div>
-          <div class="quality-line" id="qualitySummary">No source loaded.</div>
-        </div>
-
-        <div class="section">
-          <h3>Sample Conditioning</h3>
-          <div class="inline">
-            <div class="control">
-              <label for="avgWindow">Sweep averaging</label>
-              <select id="avgWindow">
-                <option value="1" selected>1 sweep (raw)</option>
-                <option value="3">3 sweeps</option>
-                <option value="5">5 sweeps</option>
-                <option value="9">9 sweeps</option>
-              </select>
-            </div>
-            <div class="control">
-              <label for="smoothMode">In-sweep smoothing</label>
-              <select id="smoothMode">
-                <option value="raw" selected>None</option>
-                <option value="mavg3">Moving average (3)</option>
-                <option value="mavg5">Moving average (5)</option>
-                <option value="median3">Median filter (3)</option>
-              </select>
-            </div>
-          </div>
-          <div class="inline">
-            <div class="control">
-              <label class="checkline"><input type="checkbox" id="despikeEnable" checked /> De-spike neighbors</label>
-            </div>
-            <div class="control">
-              <label for="despikeThreshold">Spike threshold (dB)</label>
-              <input id="despikeThreshold" type="number" min="1" max="40" step="1" value="12" />
-            </div>
-          </div>
-        </div>
 
         <div class="section" id="ySettingsBox">
           <h3>Y-Axis</h3>
@@ -633,6 +589,64 @@
             <input id="markerFreq" type="number" step="0.001" value="936.950" />
           </div>
         </div>
+      
+
+      <div class="tab-panel" data-tab-panel="advanced">
+        <div class="section">
+          <h3>Capture Integrity <small>Step 2</small></h3>
+          <div class="control">
+            <label class="checkline"><input type="checkbox" id="qualityGate" checked /> Reject low-completeness sweeps</label>
+          </div>
+          <div class="inline">
+            <div class="control">
+              <label for="minValidPercent">Min valid bins (%)</label>
+              <input id="minValidPercent" type="number" min="0" max="100" step="1" value="90" />
+            </div>
+            <div class="control">
+              <label for="missingPolicy">Missing-bin handling</label>
+              <select id="missingPolicy">
+                <option value="interpolate" selected>Repair by interpolation</option>
+                <option value="pad">Pad with last value</option>
+                <option value="drop">Drop incomplete sweep</option>
+              </select>
+            </div>
+          </div>
+          <div class="quality-line" id="qualitySummary">No source loaded.</div>
+        </div>
+
+        <div class="section">
+          <h3>Sample Conditioning</h3>
+          <div class="inline">
+            <div class="control">
+              <label for="avgWindow">Sweep averaging</label>
+              <select id="avgWindow">
+                <option value="1" selected>1 sweep (raw)</option>
+                <option value="3">3 sweeps</option>
+                <option value="5">5 sweeps</option>
+                <option value="9">9 sweeps</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="smoothMode">In-sweep smoothing</label>
+              <select id="smoothMode">
+                <option value="raw" selected>None</option>
+                <option value="mavg3">Moving average (3)</option>
+                <option value="mavg5">Moving average (5)</option>
+                <option value="median3">Median filter (3)</option>
+              </select>
+            </div>
+          </div>
+          <div class="inline">
+            <div class="control">
+              <label class="checkline"><input type="checkbox" id="despikeEnable" checked /> De-spike neighbors</label>
+            </div>
+            <div class="control">
+              <label for="despikeThreshold">Spike threshold (dB)</label>
+              <input id="despikeThreshold" type="number" min="1" max="40" step="1" value="12" />
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="tab-panel" data-tab-panel="capture">
@@ -728,6 +742,7 @@ const E = {
   viewMode: document.getElementById("viewMode"),
   frameSlider: document.getElementById("frameSlider"),
   currentSweepLabel: document.getElementById("currentSweepLabel"),
+  spectroScaleWrap: document.getElementById("spectroScaleWrap"),
   spectrogramScaleMode: document.getElementById("spectrogramScaleMode"),
   spectrogramScaleInputs: document.getElementById("spectrogramScaleInputs"),
   spectrogramMinDbm: document.getElementById("spectrogramMinDbm"),
@@ -743,6 +758,7 @@ const E = {
   markerFreq: document.getElementById("markerFreq"),
   playBtn: document.getElementById("playBtn"),
   resetHoldBtn: document.getElementById("resetHoldBtn"),
+  maxHoldAllBtn: document.getElementById("maxHoldAllBtn"),
   sweepsCount: document.getElementById("sweepsCount"),
   binsCount: document.getElementById("binsCount"),
   centerFreq: document.getElementById("centerFreq"),
@@ -843,6 +859,11 @@ function spectrogramScaleCfg() {
     min = max - 1;
   }
   return { auto: false, min, max };
+}
+
+function updateSpectroScaleVisibility() {
+  const isSpectrogram = E.viewMode.value === "spectrogram";
+  E.spectroScaleWrap.style.display = isSpectrogram ? "block" : "none";
 }
 
 function updateSpectrogramScaleUi() {
@@ -1277,7 +1298,7 @@ function stopPlayback() {
     S.timer = null;
   }
   S.playing = false;
-  E.playBtn.textContent = "Play";
+  E.playBtn.textContent = "▶ Play";
   E.playBtn.classList.remove("is-playing");
 }
 
@@ -1288,7 +1309,7 @@ function startPlayback() {
   }
   stopPlayback();
   S.playing = true;
-  E.playBtn.textContent = "Pause";
+  E.playBtn.textContent = "⏸ Pause";
   E.playBtn.classList.add("is-playing");
   const interval = Math.max(25, Number(E.playSpeed.value) || 500);
   S.timer = setInterval(() => {
@@ -1648,6 +1669,33 @@ function exportCapturesCsv() {
   URL.revokeObjectURL(url);
 }
 
+function computeFullCaptureMaxHold() {
+  if (!S.frames.length) {
+    setStatus("Load a scan file first.", "warn");
+    return;
+  }
+  E.maxHoldAllBtn.disabled = true;
+  E.maxHoldAllBtn.textContent = "⏳ Computing…";
+
+  // Use setTimeout so the UI can repaint the disabled/loading state first
+  setTimeout(() => {
+    const firstSamples = getProcessedSamples(0);
+    S.maxHold = firstSamples.slice();
+    for (let i = 1; i < S.frames.length; i++) {
+      const s = getProcessedSamples(i);
+      for (let j = 0; j < S.maxHold.length && j < s.length; j++) {
+        if (s[j] > S.maxHold[j]) {
+          S.maxHold[j] = s[j];
+        }
+      }
+    }
+    draw(false);
+    setStatus(`✔ Max hold computed across all ${S.frames.length} sweep${S.frames.length !== 1 ? "s" : ""}.`, "ok");
+    E.maxHoldAllBtn.disabled = false;
+    E.maxHoldAllBtn.textContent = "⚡ Max Hold — Full Capture";
+  }, 20);
+}
+
 function attachEvents() {
   E.fileInput.onchange = async (event) => {
     const file = event.target.files[0];
@@ -1661,6 +1709,7 @@ function attachEvents() {
   };
 
   E.viewMode.onchange = () => {
+    updateSpectroScaleVisibility();
     draw(false);
   };
 
@@ -1681,6 +1730,10 @@ function attachEvents() {
   E.resetHoldBtn.onclick = () => {
     S.maxHold = [];
     draw(false);
+  };
+
+  E.maxHoldAllBtn.onclick = () => {
+    computeFullCaptureMaxHold();
   };
 
   E.frameSlider.oninput = () => {
@@ -1755,6 +1808,7 @@ function init() {
   updateMarkerControls();
   updateYControlsState();
   updateSpectrogramScaleUi();
+  updateSpectroScaleVisibility();
   Plotly.newPlot("plot", [], {
     paper_bgcolor: "#0f0f0f",
     plot_bgcolor: "#171717"
