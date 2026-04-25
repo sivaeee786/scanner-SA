@@ -184,6 +184,36 @@
     flex: 1; min-width: 0;
   }
   .trace-row.is-off { opacity: 0.45; }
+  .trace-row { flex-wrap: wrap; }
+  .trace-mode-bar {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+    margin-top: 5px;
+  }
+  .trace-mode-btn {
+    flex: 1;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 3px 0;
+    cursor: pointer;
+    border: 1px solid #c7d3b2;
+    background: #eef4dd;
+    color: #3a4a20;
+    transition: all 0.12s;
+  }
+  .trace-mode-btn.is-active-update {
+    background: #b8e090;
+    border-color: #7ab840;
+    color: #1a3a00;
+  }
+  .trace-mode-btn.is-active-view {
+    background: #ffd580;
+    border-color: #c8960a;
+    color: #3a2800;
+  }
   .marker-row {
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -927,10 +957,10 @@ const E = {
 const MARKER_COLORS = ['#ffd166', '#06d6a0', '#ff6b6b', '#a78bfa'];
 const TRACE_COLORS  = ['#6ec6ff', '#ff7a93', '#a8e6a3', '#ffd580'];
 const TRACE_DEFAULTS = [
-  { enabled: true,  type: 'live',    name: 'T1' },
-  { enabled: true,  type: 'maxhold', name: 'T2' },
-  { enabled: false, type: 'avghold', name: 'T3' },
-  { enabled: false, type: 'live',    name: 'T4' },
+  { enabled: true,  type: 'live',    name: 'T1', frozen: false, frozenData: null },
+  { enabled: true,  type: 'maxhold', name: 'T2', frozen: false, frozenData: null },
+  { enabled: false, type: 'avghold', name: 'T3', frozen: false, frozenData: null },
+  { enabled: false, type: 'live',    name: 'T4', frozen: false, frozenData: null },
 ];
 
 const S = {
@@ -1254,6 +1284,7 @@ function resetProcessingCache(resetHold) {
 function getTraceData(traceIdx, currentSamples) {
   const t = S.traces[traceIdx];
   if (!t || !t.enabled) return null;
+  if (t.frozen && t.frozenData) return t.frozenData;
   if (t.type === 'live') return currentSamples;
   if (t.type === 'maxhold') return S.maxHold.length === currentSamples.length ? S.maxHold : null;
   if (t.type === 'avghold') return S.avgHold.length === currentSamples.length ? S.avgHold : null;
@@ -1273,6 +1304,10 @@ function renderTraceRows() {
         <option value="maxhold" ${t.type==='maxhold' ? 'selected':''}>Max Hold</option>
         <option value="avghold" ${t.type==='avghold' ? 'selected':''}>Avg Hold</option>
       </select>
+      <div class="trace-mode-bar">
+        <button class="trace-mode-btn${!t.frozen ? ' is-active-update' : ''}" data-tmode="${i}" data-frozen="false">▶ Update</button>
+        <button class="trace-mode-btn${t.frozen  ? ' is-active-view'   : ''}" data-tmode="${i}" data-frozen="true">🔒 View Only</button>
+      </div>
     </div>`).join('');
 }
 
@@ -1541,17 +1576,25 @@ function draw(updateHold) {
   E.yBox.style.display = "block";
   E.mBox.style.display = "block";
 
+  // Only update holds if at least one non-frozen maxhold/avghold trace needs it
+  const anyMaxHoldUpdating = S.traces.some(tr => tr.enabled && tr.type === 'maxhold' && !tr.frozen);
+  const anyAvgHoldUpdating = S.traces.some(tr => tr.enabled && tr.type === 'avghold' && !tr.frozen);
+
   if (!S.maxHold.length || S.maxHold.length !== currentSamples.length) {
     S.maxHold = currentSamples.slice();
     S.avgHold = currentSamples.slice();
     S.avgCount = 1;
   } else if (updateHold) {
-    for (let i = 0; i < S.maxHold.length; i++) {
-      if (currentSamples[i] > S.maxHold[i]) S.maxHold[i] = currentSamples[i];
+    if (anyMaxHoldUpdating) {
+      for (let i = 0; i < S.maxHold.length; i++) {
+        if (currentSamples[i] > S.maxHold[i]) S.maxHold[i] = currentSamples[i];
+      }
     }
-    S.avgCount++;
-    for (let i = 0; i < S.avgHold.length; i++) {
-      S.avgHold[i] += (currentSamples[i] - S.avgHold[i]) / S.avgCount;
+    if (anyAvgHoldUpdating) {
+      S.avgCount++;
+      for (let i = 0; i < S.avgHold.length; i++) {
+        S.avgHold[i] += (currentSamples[i] - S.avgHold[i]) / S.avgCount;
+      }
     }
   }
 
@@ -1559,12 +1602,24 @@ function draw(updateHold) {
   S.traces.forEach((tr, ti) => {
     if (!tr.enabled) return;
     let y = null;
-    if (tr.type === 'live') y = currentSamples;
-    else if (tr.type === 'maxhold' && S.maxHold.length === currentSamples.length) y = S.maxHold;
-    else if (tr.type === 'avghold' && S.avgHold.length === currentSamples.length) y = S.avgHold;
+    if (tr.frozen && tr.frozenData) {
+      y = tr.frozenData;
+    } else if (tr.type === 'live') {
+      y = currentSamples;
+    } else if (tr.type === 'maxhold' && S.maxHold.length === currentSamples.length) {
+      y = S.maxHold;
+    } else if (tr.type === 'avghold' && S.avgHold.length === currentSamples.length) {
+      y = S.avgHold;
+    }
     if (!y) return;
     const dash = tr.type === 'live' ? 'solid' : tr.type === 'maxhold' ? 'dot' : 'dash';
-    traces.push({ x: frame.freqs, y, name: tr.name, line: { color: TRACE_COLORS[ti], width: tr.type === 'live' ? 2 : 1.5, dash } });
+    const opacity = tr.frozen ? 0.65 : 1;
+    traces.push({
+      x: frame.freqs, y,
+      name: tr.name + (tr.frozen ? ' 🔒' : ''),
+      line: { color: TRACE_COLORS[ti], width: tr.type === 'live' ? 2 : 1.5, dash },
+      opacity
+    });
   });
   buildMarkerTraces(frame, currentSamples).forEach(t => traces.push(t));
 
@@ -2066,8 +2121,31 @@ function attachEvents() {
     } else if (t.dataset.ttype !== undefined) {
       const i = Number(t.dataset.ttype);
       S.traces[i].type = t.value;
+      // Clear frozen snapshot when type changes
+      S.traces[i].frozenData = null;
+      S.traces[i].frozen = false;
+      renderTraceRows();
       draw(false);
     }
+  });
+
+  document.getElementById('traceRows').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-tmode]');
+    if (!btn) return;
+    const i = Number(btn.dataset.tmode);
+    const freeze = btn.dataset.frozen === 'true';
+    if (freeze && !S.traces[i].frozen) {
+      // Snapshot the current data for this trace
+      const currentSamples = S.frames.length ? getProcessedSamples(S.currentIndex) : [];
+      const live = getTraceData(i, currentSamples);
+      S.traces[i].frozenData = live ? live.slice() : null;
+      S.traces[i].frozen = true;
+    } else if (!freeze) {
+      S.traces[i].frozen = false;
+      S.traces[i].frozenData = null;
+    }
+    renderTraceRows();
+    draw(false);
   });
 
   // Marker event delegation
