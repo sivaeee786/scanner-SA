@@ -668,7 +668,7 @@
               </div>
               <div class="control">
                 <label for="spectrogramMaxDbm">Max dBm</label>
-                <input id="spectrogramMaxDbm" type="number" step="1" value="-70" />
+                <input id="spectrogramMaxDbm" type="number" step="1" value="-50" />
               </div>
             </div>
           </div>
@@ -1033,7 +1033,7 @@ function spectrogramScaleCfg() {
   let min = Number(E.spectrogramMinDbm.value);
   let max = Number(E.spectrogramMaxDbm.value);
   if (!Number.isFinite(min)) min = -130;
-  if (!Number.isFinite(max)) max = -70;
+  if (!Number.isFinite(max)) max = -50;
   if (min >= max) {
     min = max - 1;
   }
@@ -1492,7 +1492,11 @@ function drawSpectrogram() {
   const minBins = Math.min(...slices.map((arr) => arr.length));
   const clipped = slices.map((arr) => arr.slice(0, minBins));
   const z = Array.from({ length: minBins }, (_, binIndex) => clipped.map((row) => row[binIndex]));
-  const x = sliceFrames.map((f, idx) => `${f.timestamp} [${startIndex + idx + 1}]`);
+  const x = sliceFrames.map((f) => {
+    const ts = f.timestamp || "";
+    const parts = ts.trim().split(/\s+/);
+    return parts.length >= 2 ? parts[1] : parts[0] || ts;
+  });
   const y = sliceFrames[0].freqs.slice(0, minBins);
 
   const scale = spectrogramScaleCfg();
@@ -1501,7 +1505,7 @@ function drawSpectrogram() {
     x,
     y,
     type: "heatmap",
-    colorscale: "Viridis",
+    colorscale: "Jet",
     showscale: true,
     colorbar: { title: "dBm", tickfont: { color: "#fff" } }
   };
@@ -1516,7 +1520,7 @@ function drawSpectrogram() {
     plot_bgcolor: "#171717",
     font: { color: "#f2f2f2" },
     margin: { t: 30, b: 80, l: 80, r: 20 },
-    xaxis: { title: "Time / Sweep", gridcolor: "#333", tickangle: -40 },
+    xaxis: { title: "Time", gridcolor: "#333", tickangle: -45 },
     yaxis: { title: "Frequency (MHz)", gridcolor: "#333" }
   }, {
     responsive: true,
